@@ -1,0 +1,731 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Asian Food - 자막 플레이어</title>
+  <style>
+    body { margin:0; font-family:sans-serif; background:#f5f8fa; color:#232340; }
+    .container {
+      max-width: 440px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      transition: all .2s;
+      min-height: 100vh;
+      background: #f5f8fa;
+    }
+    .container.horizontal {
+      max-width: 100vw;
+      margin: 0;
+      flex-direction: row;
+      min-height: 100vh;
+      background: #f5f8fa;
+    }
+    .left-panel {
+      width: 40%;
+      min-width: 320px;
+      background: #f5f8fa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 0;
+    }
+    .right-panel {
+      width: 60%;
+      background: #f9fafb;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: stretch;
+      border-left: 2px solid #dbeafe;
+      /* padding-top: 20px; */
+      min-height: 100vh;
+      /* 여기 padding 삭제! */
+      padding: 0;
+    }
+    #fixed-top-group, #fixed-top-group-vert {
+      width: 100%;
+      background: #f5f8fa;
+      box-shadow: 0 4px 16px #d5dae533;
+      border-radius: 0 0 18px 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      padding-bottom: 12px;
+    }
+    #player, #player-vert {
+      width: 100%;
+      aspect-ratio: 16/9;
+      border: none;
+      border-radius: 18px 18px 0 0;
+      background: #000;
+      box-shadow: 0 2px 10px #cdd4e7;
+      display: block;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    #fixed-controls, #fixed-controls-vert {
+      width: 100%;
+      background: #f5f8fa;
+      border-radius: 0 0 18px 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      padding-bottom: 4px;
+    }
+    #progress, #progress-vert {
+      margin:12px 18px 8px 18px;
+      font-size:17px;
+      font-weight:500;
+      text-align:right;
+    }
+    #controls, #controls-vert {
+      display:flex;
+      gap:10px;
+      margin:0 18px 10px 18px;
+      align-items:center;
+      justify-content:center;
+    }
+    #controls button, #controls-vert button {
+      font-size:15px; padding:7px 14px; border-radius:10px; border:none;
+      background:#dbeafe; color:#232340; cursor:pointer;
+      transition: .13s;
+      white-space: nowrap;
+    }
+    #controls button.active, #controls-vert button.active { background:#232340; color:#fff; }
+    #mode-btn, #layout-btn, #mode-btn-vert, #layout-btn-vert {
+      font-size:14px; padding:6px 12px; border-radius:9px; border:none;
+      background:#fed7aa; color:#c2410c; cursor:pointer; margin-left:8px;
+      white-space: nowrap;
+    }
+    #mode-btn.active, #layout-btn.active, #mode-btn-vert.active, #layout-btn-vert.active { background:#c2410c; color:#fff;}
+    #subs-vert {
+      display:flex; flex-direction:column; gap:12px;
+      padding:0 0 24px 0;
+      width: 100%;
+      align-items: center;
+    }
+    #subs {
+      display:flex; flex-direction:column; gap:12px;
+      padding:0 0 24px 0;
+      width: 100%;
+      align-items: stretch;
+    }
+    /* 세로모드 자막(중앙 정렬, 폭 제한) */
+    .sub-row {
+      display:flex; align-items:center; gap:10px;
+      width: 98%;
+      max-width: 420px;
+      margin: 0 auto;
+    }
+    .sub-btn {
+      flex:1;
+      font-size: 18px;
+      padding:16px;
+      border-radius:14px;
+      border:none;
+      background:#e0e7ff;
+      color:#232340;
+      text-align:left;
+      transition:.13s;
+      white-space:normal;
+      line-height: 1.3;
+      word-break: break-word;
+      max-width: 380px;
+    }
+    /* 가로모드 자막: 오른쪽 패널 전체 길게, 글씨 크게, 꽉 차게 */
+    .container.horizontal .right-panel {
+      overflow-y: auto;
+      height: 100vh;
+      min-height: 100vh;
+      position: relative;
+      padding: 0; /* 추가! */
+    }
+    .container.horizontal .sub-row {
+      max-width: 100vw;
+      width: 100vw;
+      margin: 0;
+    }
+    .container.horizontal .sub-btn {
+      font-size: 30px;
+      width: 98vw !important;
+      min-height: 52px;
+      max-width: 100vw !important;
+      margin: 0 auto 10px auto;
+      border-radius: 18px;
+      padding-left: 36px;
+      padding-right: 36px;
+    }
+    .sub-btn:active { background:#a5b4fc; }
+    .sub-btn.learned { background:#a7f3d0; color:#157348; text-decoration:line-through; }
+    .hide-btn { background:transparent; border:none; font-size:19px; cursor:pointer; color:#bbb; }
+    .hide-btn.active { color:#3b3b3b; }
+    .check-btn { background:transparent; border:none; font-size:20px; cursor:pointer; margin-left:3px; color:#b4e197;}
+    .check-btn.checked { color:#22c55e; }
+    /* 세로모드 자막 중앙 정렬 */
+    #vertical-root {
+      width: 100%;
+      max-width: 440px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #f5f8fa;
+    }
+    /* 모바일 대응 */
+    @media (max-width: 900px) {
+      .container.horizontal .left-panel, .container.horizontal .right-panel { width: 100%; min-width:0;}
+      .container.horizontal { flex-direction: column; }
+    }
+    @media (max-width: 520px) {
+      .container, .container.horizontal { flex-direction: column !important; max-width: 100vw !important; }
+      .left-panel, .right-panel { width: 100% !important; min-width:0;}
+      #fixed-top-group, #fixed-top-group-vert { border-radius:0 0 14px 14px; }
+      #player, #player-vert { border-radius:0;}
+      #fixed-controls, #fixed-controls-vert { border-radius:0 0 14px 14px;}
+      .sub-btn { font-size:15px; padding:12px;}
+      #progress, #progress-vert { font-size:14px;}
+      #vertical-root { max-width: 100vw; }
+      .sub-row { max-width: 100vw; }
+      .sub-btn { max-width: 98vw; }
+      .container.horizontal .sub-btn { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+<div class="container" id="container">
+  <!-- 가로모드(좌우) 패널 -->
+  <div class="left-panel" id="left-panel" style="display:none">
+    <div id="fixed-top-group">
+      <iframe id="player" src="https://www.youtube.com/embed/OFE5qIFWyR4?enablejsapi=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+      <div id="fixed-controls">
+        <div id="progress"></div>
+        <div id="controls">
+          <button id="show-all" class="active">전체 보기</button>
+          <button id="show-learned">외웠음 보기</button>
+          <button id="mode-btn" class="active">한줄 재생</button>
+          <button id="layout-btn" title="세로모드로 전환">세로모드</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="right-panel" id="right-panel" style="display:none">
+    <div id="subs"></div>
+  </div>
+  <!-- 세로모드 패널 -->
+  <div id="vertical-root">
+    <div id="fixed-top-group-vert">
+      <iframe id="player-vert" src="https://www.youtube.com/embed/OFE5qIFWyR4?enablejsapi=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
+      <div id="fixed-controls-vert">
+        <div id="progress-vert"></div>
+        <div id="controls-vert">
+          <button id="show-all-vert" class="active">전체 보기</button>
+          <button id="show-learned-vert">외웠음 보기</button>
+          <button id="mode-btn-vert" class="active">한줄 재생</button>
+          <button id="layout-btn-vert" title="가로모드로 전환">가로모드</button>
+        </div>
+      </div>
+    </div>
+    <div id="subs-vert"></div>
+  </div>
+</div>
+<script>
+const SUBS = [
+  {
+    "start": 23.403,
+    "end": 24.9,
+    "text": "You wanna go away for a year?"
+  },
+  {
+    "start": 25.218,
+    "end": 27.18,
+    "text": "Do you know what I felt  when l woke up, Delia?"
+  },
+  {
+    "start": 27.31,
+    "end": 27.897,
+    "text": "Nothing."
+  },
+  {
+    "start": 27.908,
+    "end": 32.04,
+    "text": "No passion, no spark, no faith, no heat. Absolutely nothing."
+  },
+  {
+    "start": 32.192,
+    "end": 35.31,
+    "text": "I think I've really gotten past the point where I can be calling this a bad moment."
+  },
+  {
+    "start": 35.552,
+    "end": 37.116,
+    "text": "And it just it terrifies me."
+  },
+  {
+    "start": 37.127,
+    "end": 39.57,
+    "text": "I mean Jesus, this is like worse than death to me... ...the idea"
+  },
+  {
+    "start": 39.75,
+    "end": 41.746,
+    "text": "this is the person I'm gonna be from now on."
+  },
+  {
+    "start": 41.757,
+    "end": 43.32,
+    "text": "You know what? This happens to people."
+  },
+  {
+    "start": 43.392,
+    "end": 45.405,
+    "text": "They fall in love in their 20s, get married"
+  },
+  {
+    "start": 45.416,
+    "end": 48.3,
+    "text": "do the granite countertop,  white-picket fence in their 30s."
+  },
+  {
+    "start": 48.54,
+    "end": 51.33,
+    "text": "and somewhere and they,,  they realize, \"This is not for me anymore.\""
+  },
+  {
+    "start": 51.6,
+    "end": 53.179,
+    "text": "So they fail and they fall down,"
+  },
+  {
+    "start": 53.19,
+    "end": 54.928,
+    "text": "they hurt like hell, they straighten up..."
+  },
+  {
+    "start": 54.939,
+    "end": 57.27,
+    "text": "and march their bruise asses to the shrink's office."
+  },
+  {
+    "start": 57.53,
+    "end": 59.051,
+    "text": "They can't just check out."
+  },
+  {
+    "start": 59.062,
+    "end": 61.08,
+    "text": "l am not checking out."
+  },
+  {
+    "start": 61.26,
+    "end": 62.947,
+    "text": "I need to change."
+  },
+  {
+    "start": 62.958,
+    "end": 65.04,
+    "text": "You have a support system here, Liz."
+  },
+  {
+    "start": 65.19,
+    "end": 67.03,
+    "text": "You have friends and family who love you."
+  },
+  {
+    "start": 67.04,
+    "end": 68.88,
+    "text": "And do you feel my love for you?"
+  },
+  {
+    "start": 69.15,
+    "end": 70.41,
+    "text": "My support for you?"
+  },
+  {
+    "start": 70.56,
+    "end": 72.12,
+    "text": "No. There's, like, nothing."
+  },
+  {
+    "start": 72.3,
+    "end": 73.63,
+    "text": "l have no pulse."
+  },
+  {
+    "start": 76.26,
+    "end": 77.28,
+    "text": "l am going to Italy."
+  },
+  {
+    "start": 77.52,
+    "end": 78.869,
+    "text": "ltaly. Why ltaly?"
+  },
+  {
+    "start": 78.88,
+    "end": 80.165,
+    "text": "What did you have for lunch?"
+  },
+  {
+    "start": 80.175,
+    "end": 81.254,
+    "text": "l don't know. A salad."
+  },
+  {
+    "start": 81.278,
+    "end": 82.33,
+    "text": "Exactly."
+  },
+  {
+    "start": 82.44,
+    "end": 85.89,
+    "text": "l used to have this appetite for food"
+  },
+  {
+    "start": 86.04,
+    "end": 87.825,
+    "text": "for my life and it, it's just gone."
+  },
+  {
+    "start": 89.58,
+    "end": 93.52,
+    "text": "I wanna go someplace  where l can marvel at something."
+  },
+  {
+    "start": 93.9,
+    "end": 97.17,
+    "text": "Language, gelato, spaghetti, something."
+  },
+  {
+    "start": 97.59,
+    "end": 99.21,
+    "text": "-You're talking like a college kid."
+  },
+  {
+    "start": 99.221,
+    "end": 100.435,
+    "text": "You know l've been acting like one."
+  },
+  {
+    "start": 100.514,
+    "end": 101.79,
+    "text": "Since I was 15,"
+  },
+  {
+    "start": 101.91,
+    "end": 104.16,
+    "text": "I've either been with a guy  or breaking up with a guy."
+  },
+  {
+    "start": 104.43,
+    "end": 106.62,
+    "text": "I have not given myself two weeks"
+  },
+  {
+    "start": 106.631,
+    "end": 109.734,
+    "text": "of a breather to just deal with,  you know, myself."
+  },
+  {
+    "start": 113.1,
+    "end": 114.965,
+    "text": "What's going on with you and David?"
+  },
+  {
+    "start": 123.665,
+    "end": 124.62,
+    "text": "What, did you fall out?"
+  },
+  {
+    "start": 125.072,
+    "end": 127.03,
+    "text": "I don't know how to be here."
+  },
+  {
+    "start": 127.26,
+    "end": 128.28,
+    "text": "You wanna know how to be here?"
+  },
+  {
+    "start": 128.82,
+    "end": 131.02,
+    "text": "Stop constantly waiting for something."
+  },
+  {
+    "start": 135.63,
+    "end": 136.74,
+    "text": "I'm going to Italy"
+  },
+  {
+    "start": 137.126,
+    "end": 139.996,
+    "text": "and then l'm going to David's guru's ashram in lndia..."
+  },
+  {
+    "start": 140.007,
+    "end": 142.769,
+    "text": "and l'm going to end the year in Bali."
+  },
+  {
+    "start": 147.0,
+    "end": 147.88,
+    "text": "That's what l'm gonna do."
+  },
+  {
+    "start": 148.23,
+    "end": 150.412,
+    "text": "That's harder to argue with. The beaches are nice."
+  },
+  {
+    "start": 150.423,
+    "end": 151.081,
+    "text": "But why?"
+  },
+  {
+    "start": 151.092,
+    "end": 152.411,
+    "text": "Because Ketut told me I would."
+  },
+  {
+    "start": 152.422,
+    "end": 153.293,
+    "text": "Guy with no teeth."
+  },
+  {
+    "start": 153.303,
+    "end": 154.834,
+    "text": "When you're desperate in your life,"
+  },
+  {
+    "start": 154.844,
+    "end": 156.02,
+    "text": "and some guy who,"
+  },
+  {
+    "start": 156.03,
+    "end": 160.09,
+    "text": "yes, looks a little like Yoda hands you a prophecy, you have to respond."
+  },
+  {
+    "start": 160.95,
+    "end": 161.764,
+    "text": "Do you need a Xanax?"
+  },
+  {
+    "start": 161.775,
+    "end": 162.91,
+    "text": "Always."
+  },
+  {
+    "start": 164.16,
+    "end": 166.771,
+    "text": "Okay, l'm just gonna say it. I'm gonna say it and be done with it."
+  },
+  {
+    "start": 167.55,
+    "end": 169.3,
+    "text": "What if it doesn't work?"
+  }
+];
+
+const STORAGE_KEY = 'subStatus_asianfood_yt';
+let status = {};
+let mode = 'vertical'; // vertical | horizontal
+function loadStatus() {
+  try {
+    status = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    for (let i=0; i<SUBS.length; i++) {
+      if (!status[i]) status[i]={hide:false,learned:false};
+    }
+  } catch { status = {}; }
+}
+function saveStatus() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(status));
+}
+function renderSubs(view='all', mode='vertical') {
+  const subsDiv = (mode==='vertical') ? document.getElementById('subs-vert') : document.getElementById('subs');
+  subsDiv.innerHTML = '';
+  let learned = 0;
+  SUBS.forEach((sub, idx) => {
+    if (view==='learned' && !status[idx].learned) return;
+    if (status[idx].learned) learned++;
+    const row = document.createElement('div');
+    row.className = 'sub-row';
+    const btn = document.createElement('button');
+    btn.className = 'sub-btn' + (status[idx].learned ? ' learned':'');
+    btn.innerText = status[idx].hide ? '🙈' : sub.text;
+    btn.onclick = () => playPauseOrRestartSub(idx, mode);
+    const hideBtn = document.createElement('button');
+    hideBtn.className = 'hide-btn' + (status[idx].hide ? ' active' : '');
+    hideBtn.innerText = '🙈';
+    hideBtn.title = status[idx].hide ? '자막 보이기' : '자막 숨기기';
+    hideBtn.onclick = (e) => {
+      status[idx].hide = !status[idx].hide;
+      saveStatus(); renderSubs(currentView, mode);
+      e.stopPropagation();
+    };
+    const checkBtn = document.createElement('button');
+    checkBtn.className = 'check-btn' + (status[idx].learned ? ' checked':'');
+    checkBtn.innerText = '✔️';
+    checkBtn.title = status[idx].learned ? '외웠음 해제' : '외웠음';
+    checkBtn.onclick = (e) => {
+      status[idx].learned = !status[idx].learned;
+      saveStatus(); renderSubs(currentView, mode);
+      e.stopPropagation();
+    };
+    row.appendChild(btn);
+    row.appendChild(hideBtn);
+    row.appendChild(checkBtn);
+    subsDiv.appendChild(row);
+  });
+  let percent = SUBS.length ? Math.round(learned/SUBS.length*100) : 0;
+  const prog = (mode==='vertical') ? document.getElementById('progress-vert') : document.getElementById('progress');
+  if (prog) prog.innerHTML =
+    `진행률: <b>${percent}%</b> (${learned}/${SUBS.length})`;
+}
+let player, playerVert, timeoutId, currentView = 'all';
+let playingSubIdx = null;
+let pausedSubIdx = null;
+let paused = false;
+let playMode = 'single';
+function onYouTubeIframeAPIReady() {
+  player = new YT.Player('player');
+  playerVert = new YT.Player('player-vert');
+}
+window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
+function playPauseOrRestartSub(idx, mode='vertical') {
+  const curPlayer = (mode === 'vertical') ? playerVert : player;
+  if (!curPlayer || !curPlayer.seekTo) return;
+  const state = curPlayer.getPlayerState();
+  if (playingSubIdx !== idx) {
+    playSubByMode(idx, mode);
+    playingSubIdx = idx;
+    pausedSubIdx = null;
+    paused = false;
+    return;
+  }
+  if (state === 1) {
+    curPlayer.pauseVideo();
+    if (timeoutId) clearTimeout(timeoutId);
+    paused = true;
+    pausedSubIdx = idx;
+    return;
+  }
+  if (state === 2 && paused && pausedSubIdx === idx) {
+    playSubByMode(idx, mode);
+    paused = false;
+    return;
+  }
+  playSubByMode(idx, mode);
+  playingSubIdx = idx;
+  paused = false;
+  pausedSubIdx = null;
+}
+function playSubByMode(idx, mode='vertical') {
+  const curPlayer = (mode === 'vertical') ? playerVert : player;
+  let start = SUBS[idx].start;
+  let end;
+  if (playMode === 'single') {
+    end = SUBS[idx].end;
+  } else {
+    end = (SUBS[idx+1] ? SUBS[idx+1].end : SUBS[idx].end);
+  }
+  curPlayer.seekTo(start, true);
+  curPlayer.playVideo();
+  if (timeoutId) clearTimeout(timeoutId);
+  timeoutId = setTimeout(() => {
+    curPlayer.pauseVideo();
+    playingSubIdx = null;
+    paused = false;
+    pausedSubIdx = null;
+  }, (end - start) * 1000);
+}
+function setLayout(newMode) {
+  mode = newMode;
+  const cont = document.getElementById('container');
+  if (mode === 'horizontal') {
+    cont.classList.add('horizontal');
+    document.getElementById('left-panel').style.display = '';
+    document.getElementById('right-panel').style.display = '';
+    document.getElementById('vertical-root').style.display = 'none';
+    renderSubs(currentView, 'horizontal');
+  } else {
+    cont.classList.remove('horizontal');
+    document.getElementById('left-panel').style.display = 'none';
+    document.getElementById('right-panel').style.display = 'none';
+    document.getElementById('vertical-root').style.display = '';
+    renderSubs(currentView, 'vertical');
+  }
+}
+function setHandlers() {
+  // 세로모드
+  document.getElementById('show-all-vert').onclick = function() {
+    currentView='all';
+    this.classList.add('active');
+    document.getElementById('show-learned-vert').classList.remove('active');
+    renderSubs('all', 'vertical');
+  };
+  document.getElementById('show-learned-vert').onclick = function() {
+    currentView='learned';
+    this.classList.add('active');
+    document.getElementById('show-all-vert').classList.remove('active');
+    renderSubs('learned', 'vertical');
+  };
+  document.getElementById('mode-btn-vert').onclick = function() {
+    if (playMode === 'single') {
+      playMode = 'next';
+      this.textContent = '다음줄까지 재생';
+      this.classList.add('active');
+    } else {
+      playMode = 'single';
+      this.textContent = '한줄 재생';
+      this.classList.remove('active');
+    }
+  };
+  document.getElementById('layout-btn-vert').onclick = function() {
+    setLayout('horizontal');
+  };
+  // 가로모드
+  document.getElementById('show-all').onclick = function() {
+    currentView='all';
+    this.classList.add('active');
+    document.getElementById('show-learned').classList.remove('active');
+    renderSubs('all', 'horizontal');
+  };
+  document.getElementById('show-learned').onclick = function() {
+    currentView='learned';
+    this.classList.add('active');
+    document.getElementById('show-all').classList.remove('active');
+    renderSubs('learned', 'horizontal');
+  };
+  document.getElementById('mode-btn').onclick = function() {
+    if (playMode === 'single') {
+      playMode = 'next';
+      this.textContent = '다음줄까지 재생';
+      this.classList.add('active');
+    } else {
+      playMode = 'single';
+      this.textContent = '한줄 재생';
+      this.classList.remove('active');
+    }
+  };
+  document.getElementById('layout-btn').onclick = function() {
+    setLayout('vertical');
+  };
+}
+window.onload = function() {
+  loadStatus();
+  setHandlers();
+  setLayout('vertical'); // 기본 세로모드
+  const tag = document.createElement('script');
+  tag.src = "https://www.youtube.com/iframe_api";
+  document.body.appendChild(tag);
+};
+</script>
+</body>
+</html>
+
