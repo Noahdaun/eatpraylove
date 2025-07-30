@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Asian Food - 자막 플레이어</title>
+  <title>Eat Pray Love - 자막 플레이어</title>
   <style>
     body { margin:0; font-family:sans-serif; background:#f5f8fa; color:#232340; }
     .container {
@@ -21,6 +20,7 @@
       margin: 0;
       flex-direction: row;
       min-height: 100vh;
+      height: 100vh;
       background: #f5f8fa;
     }
     .left-panel {
@@ -32,6 +32,11 @@
       align-items: center;
       justify-content: flex-start;
       padding: 0;
+      position: sticky;
+      top: 0;
+      align-self: flex-start;
+      height: 100vh;
+      z-index: 100;
     }
     .right-panel {
       width: 60%;
@@ -41,9 +46,9 @@
       justify-content: flex-start;
       align-items: stretch;
       border-left: 2px solid #dbeafe;
-      /* padding-top: 20px; */
-      min-height: 100vh;
-      /* 여기 padding 삭제! */
+      min-height: 0;
+      height: 100vh;
+      overflow-y: auto;
       padding: 0;
     }
     #fixed-top-group, #fixed-top-group-vert {
@@ -107,6 +112,10 @@
       padding:0 0 24px 0;
       width: 100%;
       align-items: center;
+      flex: 1;
+      overflow-y: auto;
+      max-height: calc(100vh - 330px);
+      min-height: 0;
     }
     #subs {
       display:flex; flex-direction:column; gap:12px;
@@ -114,58 +123,69 @@
       width: 100%;
       align-items: stretch;
     }
-    /* 세로모드 자막(중앙 정렬, 폭 제한) */
     .sub-row {
-      display:flex; align-items:center; gap:10px;
-      width: 98%;
-      max-width: 420px;
+      display: flex;
+      align-items: center;
+      width: 100%;
+      max-width: 100vw;
+      min-width: 0;
+      gap: 10px;
+      box-sizing: border-box;
       margin: 0 auto;
+      transition: outline 0.15s, box-shadow 0.15s;
+    }
+    .sub-row.active {
+      outline: 3px solid #3b82f6 !important;
+      border-radius: 16px;
+      box-shadow: 0 0 0 2px #93c5fd66;
+      z-index: 1;
     }
     .sub-btn {
-      flex:1;
+      flex: 1 1 0%;
+      min-width: 0;
+      max-width: 100%;
       font-size: 18px;
-      padding:16px;
-      border-radius:14px;
-      border:none;
-      background:#e0e7ff;
-      color:#232340;
-      text-align:left;
-      transition:.13s;
-      white-space:normal;
+      padding: 16px;
+      border-radius: 14px;
+      border: none;
+      background: #e0e7ff;
+      color: #232340;
+      text-align: left;
+      transition: .13s;
+      white-space: normal;
       line-height: 1.3;
       word-break: break-word;
-      max-width: 380px;
+      overflow-wrap: break-word;
+      box-sizing: border-box;
     }
-    /* 가로모드 자막: 오른쪽 패널 전체 길게, 글씨 크게, 꽉 차게 */
-    .container.horizontal .right-panel {
-      overflow-y: auto;
-      height: 100vh;
-      min-height: 100vh;
-      position: relative;
-      padding: 0; /* 추가! */
-    }
-    .container.horizontal .sub-row {
-      max-width: 100vw;
-      width: 100vw;
-      margin: 0;
+    .hide-btn, .check-btn {
+      flex-shrink: 0;
+      min-width: 44px;
+      max-width: 44px;
+      height: 44px;
+      font-size: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      cursor: pointer;
     }
     .container.horizontal .sub-btn {
       font-size: 30px;
-      width: 98vw !important;
-      min-height: 52px;
-      max-width: 100vw !important;
-      margin: 0 auto 10px auto;
-      border-radius: 18px;
-      padding-left: 36px;
-      padding-right: 36px;
+      padding: 18px 32px;
+    }
+    .container.horizontal .hide-btn,
+    .container.horizontal .check-btn {
+      font-size: 30px;
+      min-width: 52px;
+      max-width: 52px;
+      height: 52px;
     }
     .sub-btn:active { background:#a5b4fc; }
     .sub-btn.learned { background:#a7f3d0; color:#157348; text-decoration:line-through; }
-    .hide-btn { background:transparent; border:none; font-size:19px; cursor:pointer; color:#bbb; }
     .hide-btn.active { color:#3b3b3b; }
-    .check-btn { background:transparent; border:none; font-size:20px; cursor:pointer; margin-left:3px; color:#b4e197;}
     .check-btn.checked { color:#22c55e; }
-    /* 세로모드 자막 중앙 정렬 */
     #vertical-root {
       width: 100%;
       max-width: 440px;
@@ -174,8 +194,16 @@
       flex-direction: column;
       align-items: center;
       background: #f5f8fa;
+      height: 100vh;
+      min-height: 100vh;
+      overflow: hidden;
     }
-    /* 모바일 대응 */
+    #fixed-top-group-vert {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: #f5f8fa;
+    }
     @media (max-width: 900px) {
       .container.horizontal .left-panel, .container.horizontal .right-panel { width: 100%; min-width:0;}
       .container.horizontal { flex-direction: column; }
@@ -192,6 +220,7 @@
       .sub-row { max-width: 100vw; }
       .sub-btn { max-width: 98vw; }
       .container.horizontal .sub-btn { font-size: 18px; }
+      .container.horizontal .hide-btn, .container.horizontal .check-btn { font-size: 18px; }
     }
   </style>
 </head>
@@ -219,7 +248,6 @@
   <div id="vertical-root">
     <div id="fixed-top-group-vert">
       <iframe id="player-vert" src="https://www.youtube.com/embed/OFE5qIFWyR4?enablejsapi=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-
       <div id="fixed-controls-vert">
         <div id="progress-vert"></div>
         <div id="controls-vert">
@@ -535,6 +563,15 @@ const SUBS = [
 const STORAGE_KEY = 'subStatus_asianfood_yt';
 let status = {};
 let mode = 'vertical'; // vertical | horizontal
+let playingSubIdx = null;
+let pausedSubIdx = null;
+let paused = false;
+let playMode = 'single';
+let timeoutId, player, playerVert, currentView = 'all';
+
+// 추가: 마지막 클릭 자막 index
+let selectedSubIdx = null;
+
 function loadStatus() {
   try {
     status = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
@@ -546,6 +583,7 @@ function loadStatus() {
 function saveStatus() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(status));
 }
+
 function renderSubs(view='all', mode='vertical') {
   const subsDiv = (mode==='vertical') ? document.getElementById('subs-vert') : document.getElementById('subs');
   subsDiv.innerHTML = '';
@@ -555,6 +593,7 @@ function renderSubs(view='all', mode='vertical') {
     if (status[idx].learned) learned++;
     const row = document.createElement('div');
     row.className = 'sub-row';
+    if (idx === selectedSubIdx) row.className += ' active';
     const btn = document.createElement('button');
     btn.className = 'sub-btn' + (status[idx].learned ? ' learned':'');
     btn.innerText = status[idx].hide ? '🙈' : sub.text;
@@ -587,17 +626,17 @@ function renderSubs(view='all', mode='vertical') {
   if (prog) prog.innerHTML =
     `진행률: <b>${percent}%</b> (${learned}/${SUBS.length})`;
 }
-let player, playerVert, timeoutId, currentView = 'all';
-let playingSubIdx = null;
-let pausedSubIdx = null;
-let paused = false;
-let playMode = 'single';
+
 function onYouTubeIframeAPIReady() {
   player = new YT.Player('player');
   playerVert = new YT.Player('player-vert');
 }
 window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
+
+// 클릭한 자막 줄만 테두리 남기고, 재생이 끝나도 유지
 function playPauseOrRestartSub(idx, mode='vertical') {
+  selectedSubIdx = idx;
+  renderSubs(currentView, mode);
   const curPlayer = (mode === 'vertical') ? playerVert : player;
   if (!curPlayer || !curPlayer.seekTo) return;
   const state = curPlayer.getPlayerState();
@@ -613,11 +652,14 @@ function playPauseOrRestartSub(idx, mode='vertical') {
     if (timeoutId) clearTimeout(timeoutId);
     paused = true;
     pausedSubIdx = idx;
+    playingSubIdx = null;
     return;
   }
   if (state === 2 && paused && pausedSubIdx === idx) {
     playSubByMode(idx, mode);
+    playingSubIdx = idx;
     paused = false;
+    pausedSubIdx = null;
     return;
   }
   playSubByMode(idx, mode);
@@ -642,6 +684,7 @@ function playSubByMode(idx, mode='vertical') {
     playingSubIdx = null;
     paused = false;
     pausedSubIdx = null;
+    // 재생 종료 시에도 selectedSubIdx는 그대로, outline 유지!
   }, (end - start) * 1000);
 }
 function setLayout(newMode) {
@@ -728,4 +771,3 @@ window.onload = function() {
 </script>
 </body>
 </html>
-
